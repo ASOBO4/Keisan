@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カレー分量自動計算システム</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #d35400;
+            text-align: center;
+        }
+        .control-panel {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            font-size: 1.2em;
+        }
+        .input-group input[type="number"] {
+            width: 80px;
+            font-size: 1.2em;
+            padding: 5px;
+            margin: 0 10px;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
+        .recipe-group {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .recipe-group h2 {
+            border-bottom: 2px solid #d35400;
+            padding-bottom: 5px;
+            color: #d35400;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .amount {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        /* ボタンのスタイル */
+        .btn {
+            padding: 10px 15px;
+            background-color: #d35400;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background-color: #e67e22;
+        }
+        .btn-secondary {
+            background-color: #7f8c8d;
+        }
+        .btn-secondary:hover {
+            background-color: #95a5a6;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* 編集パネルのスタイル */
+        #edit-panel {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none; /* 初期は非表示 */
+        }
+        #edit-panel input, #edit-panel select {
+            width: 90%;
+            padding: 5px;
+            font-size: 1em;
+        }
+        .edit-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍛 カレー分量自動計算システム</h1>
+
+    <div id="calc-panel">
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="servings">作りたい人数：</label>
+                <input type="number" id="servings" value="15" min="1" max="100">
+                <span>人分</span>
+            </div>
+            <button class="btn" onclick="openEditor()">⚙️ データを編集する</button>
+        </div>
+        <div id="recipe-container"></div>
+    </div>
+
+    <div id="edit-panel">
+        <h2>⚙️ データ編集 (基準: 15人分)</h2>
+        <p>基準となる15人分の材料、分量、単位をカスタマイズできます。</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">グループ</th>
+                    <th style="width: 35%;">材料名</th>
+                    <th style="width: 20%;">基準量(15人分)</th>
+                    <th style="width: 20%;">単位</th>
+                    <th style="width: 10%;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="edit-tbody">
+                </tbody>
+        </table>
+        
+        <div style="margin-top: 15px;">
+            <button class="btn btn-secondary" onclick="addIngredient()">＋ 新しい材料を追加</button>
+        </div>
+
+        <div class="edit-actions">
+            <button class="btn btn-secondary" onclick="cancelEdit()">キャンセル</button>
+            <button class="btn" onclick="saveAndClose()">保存して戻る</button>
+        </div>
+    </div>
+
+    <script>
+        // 基本データ（15人分基準・原本通り）
+        let ingredients = [
+            // グループA
+            { group: 'A', name: '豚肉', base: 400, unit: 'g' },
+            { group: 'A', name: 'カレー粉', base: 1, unit: '大さじ' },
+            { group: 'A', name: 'シナモン', base: 0.5, unit: '小さじ' },
+            { group: 'A', name: 'レモン汁', base: 1, unit: '小さじ' },
+            // グループB
+            { group: 'B', name: '玉ねぎ', base: 3, unit: '玉' },
+            { group: 'B', name: 'サラダ油', base: 3, unit: '大さじ' },
+            { group: 'B', name: 'にんにくチューブ', base: 1, unit: '大さじ' },
+            { group: 'B', name: 'しょうが', base: 1, unit: '小さじ' },
+            { group: 'B', name: 'バター', base: 50, unit: 'g' },
+            { group: 'B', name: 'カレー粉', base: 3, unit: '大さじ' },
+            { group: 'B', name: '小麦粉', base: 3, unit: '大さじ' },
+            // グループC
+            { group: 'C', name: 'とりガラスープの素', base: 10, unit: '小さじ' },
+            { group: 'C', name: '水', base: 5, unit: 'カップ' },
+            { group: 'C', name: 'カットトマト', base: 1, unit: '缶' },
+            { group: 'C', name: 'リンゴジュース', base: 200, unit: 'ml' },
+            { group: 'C', name: 'ガラムマサラ', base: 1.5, unit: '大さじ' }, 
+            { group: 'C', name: 'ケチャップ', base: 3, unit: '大さじ' },
+            { group: 'C', name: 'ウスターソース', base: 3, unit: '大さじ' },
+            { group: 'C', name: '塩', base: 0.5, unit: '小さじ' },
+            { group: 'C', name: 'ニンジンジュース', base: 200, unit: 'ml' }
+        ];
+
+        let tempIngredients = []; // 編集作業用の一時配列
+        const servingsInput = document.getElementById('servings');
+        const container = document.getElementById('recipe-container');
+        const calcPanel = document.getElementById('calc-panel');
+        const editPanel = document.getElementById('edit-panel');
+
+        // ==== 計算・表示機能 ====
+        function formatNumber(num) {
+            return (Math.round(num * 10) / 10).toString();
+        }
+
+        function renderRecipe() {
+            const targetServings = parseInt(servingsInput.value) || 1;
+            const ratio = targetServings / 15.0;
+
+            const groups = ['A', 'B', 'C'];
+            let html = '';
+
+            groups.forEach(groupName => {
+                const groupItems = ingredients.filter(item => item.group === groupName);
+                if (groupItems.length === 0) return; // 空のグループは描画しない
+
+                html += `<div class="recipe-group">
+                            <h2>グループ ${groupName}</h2>
+                            <table>
+                                <tr>
+                                    <th style="width: 50%;">材料</th>
+                                    <th style="width: 50%;">必要な分量</th>
+                                </tr>`;
+                
+                groupItems.forEach(item => {
+                    const calculatedAmount = item.base * ratio;
+                    const numStr = formatNumber(calculatedAmount);
+                    
+                    let displayAmount = '';
+                    if (item.unit === '大さじ' || item.unit === '小さじ') {
+                        displayAmount = `${item.unit}${numStr}`;
+                    } else {
+                        displayAmount = `${numStr}${item.unit}`;
+                    }
+                    
+                    html += `<tr>
+                                <td>${item.name}</td>
+                                <td class="amount">${displayAmount}</td>
+                             </tr>`;
+                });
+
+                html += `</table></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ==== データ編集機能 ====
+        function openEditor() {
+            // データを一時配列にディープコピーして編集画面を描画
+            tempIngredients = JSON.parse(JSON.stringify(ingredients));
+            renderEditorTable();
+            calcPanel.style.display = 'none';
+            editPanel.style.display = 'block';
+        }
+
+        function renderEditorTable() {
+            const tbody = document.getElementById('edit-tbody');
+            let html = '';
+            
+            tempIngredients.forEach((item, index) => {
+                html += `
+                    <tr>
+                        <td>
+                            <select onchange="updateTemp(${index}, 'group', this.value)">
+                                <option value="A" ${item.group === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${item.group === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${item.group === 'C' ? 'selected' : ''}>C</option>
+                            </select>
+                        </td>
+                        <td><input type="text" value="${item.name}" onchange="updateTemp(${index}, 'name', this.value)"></td>
+                        <td><input type="number" step="0.1" value="${item.base}" onchange="updateTemp(${index}, 'base', this.value)"></td>
+                        <td><input type="text" value="${item.unit}" onchange="updateTemp(${index}, 'unit', this.value)"></td>
+                        <td><button class="btn btn-danger" onclick="removeIngredient(${index})">削除</button></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function updateTemp(index, field, value) {
+            if (field === 'base') {
+                tempIngredients[index][field] = parseFloat(value) || 0;
+            } else {
+                tempIngredients[index][field] = value;
+            }
+        }
+
+        function addIngredient() {
+            // 末尾のグループを継承するか、デフォルトでAを追加
+            const lastGroup = tempIngredients.length > 0 ? tempIngredients[tempIngredients.length - 1].group : 'A';
+            tempIngredients.push({ group: lastGroup, name: '', base: 0, unit: '' });
+            renderEditorTable();
+        }
+
+        function removeIngredient(index) {
+            tempIngredients.splice(index, 1);
+            renderEditorTable();
+        }
+
+        function saveAndClose() {
+            // 編集内容を本データに上書きして計算画面へ戻る
+            ingredients = JSON.parse(JSON.stringify(tempIngredients));
+            editPanel.style.display = 'none';
+            calcPanel.style.display = 'block';
+            renderRecipe();
+        }
+
+        function cancelEdit() {
+            // 変更を破棄して戻る
+            editPanel.style.display = 'none';
+            calcPanel.style.display = 'block';
+        }
+
+        // イベントリスナー
+        servingsInput.addEventListener('input', renderRecipe);
+
+        // 初期描画
+        renderRecipe();
+    </script>
+</body>
+</html>
