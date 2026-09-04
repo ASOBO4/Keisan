@@ -71,8 +71,6 @@
             font-weight: bold;
             color: #2c3e50;
         }
-        
-        /* ボタンのスタイル */
         .btn {
             padding: 10px 15px;
             background-color: #d35400;
@@ -89,25 +87,17 @@
         .btn-secondary {
             background-color: #7f8c8d;
         }
-        .btn-secondary:hover {
-            background-color: #95a5a6;
-        }
         .btn-danger {
             background-color: #e74c3c;
             padding: 5px 10px;
             font-size: 0.9em;
         }
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-
-        /* 編集パネルのスタイル */
         #edit-panel {
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: none; /* 初期は非表示 */
+            display: none;
         }
         #edit-panel input, #edit-panel select {
             width: 90%;
@@ -126,6 +116,7 @@
 
     <h1>🍛 カレー分量自動計算システム</h1>
 
+    <!-- 計算表示モード -->
     <div id="calc-panel">
         <div class="control-panel">
             <div class="input-group">
@@ -138,10 +129,9 @@
         <div id="recipe-container"></div>
     </div>
 
+    <!-- データ編集モード -->
     <div id="edit-panel">
         <h2>⚙️ データ編集 (基準: 15人分)</h2>
-        <p>基準となる15人分の材料、分量、単位をカスタマイズできます。</p>
-        
         <table>
             <thead>
                 <tr>
@@ -152,8 +142,7 @@
                     <th style="width: 10%;">操作</th>
                 </tr>
             </thead>
-            <tbody id="edit-tbody">
-                </tbody>
+            <tbody id="edit-tbody"></tbody>
         </table>
         
         <div style="margin-top: 15px;">
@@ -167,14 +156,11 @@
     </div>
 
     <script>
-        // 基本データ（15人分基準・原本通り）
         let ingredients = [
-            // グループA
             { group: 'A', name: '豚肉', base: 400, unit: 'g' },
             { group: 'A', name: 'カレー粉', base: 1, unit: '大さじ' },
             { group: 'A', name: 'シナモン', base: 0.5, unit: '小さじ' },
             { group: 'A', name: 'レモン汁', base: 1, unit: '小さじ' },
-            // グループB
             { group: 'B', name: '玉ねぎ', base: 3, unit: '玉' },
             { group: 'B', name: 'サラダ油', base: 3, unit: '大さじ' },
             { group: 'B', name: 'にんにくチューブ', base: 1, unit: '大さじ' },
@@ -182,7 +168,6 @@
             { group: 'B', name: 'バター', base: 50, unit: 'g' },
             { group: 'B', name: 'カレー粉', base: 3, unit: '大さじ' },
             { group: 'B', name: '小麦粉', base: 3, unit: '大さじ' },
-            // グループC
             { group: 'C', name: 'とりガラスープの素', base: 10, unit: '小さじ' },
             { group: 'C', name: '水', base: 5, unit: 'カップ' },
             { group: 'C', name: 'カットトマト', base: 1, unit: '缶' },
@@ -194,15 +179,47 @@
             { group: 'C', name: 'ニンジンジュース', base: 200, unit: 'ml' }
         ];
 
-        let tempIngredients = []; // 編集作業用の一時配列
+        let tempIngredients = [];
         const servingsInput = document.getElementById('servings');
         const container = document.getElementById('recipe-container');
         const calcPanel = document.getElementById('calc-panel');
         const editPanel = document.getElementById('edit-panel');
 
-        // ==== 計算・表示機能 ====
-        function formatNumber(num) {
-            return (Math.round(num * 10) / 10).toString();
+        // 道具の適切な単位変換ロジック
+        function convertToToolUnit(val, unit) {
+            if (unit === '大さじ') {
+                // 3大さじ ＝ 1小さじ といった細かい調整や、大さじ・小さじの自動繰り上げ
+                // 1大さじ = 3小さじ (大さじ1 = 15ml, 小さじ1 = 5ml)
+                let totalSaji = val * 3; // 小さじ換算での総量
+                let oji = Math.floor(totalSaji / 3);
+                let sji = Math.round((totalSaji % 3) * 10) / 10;
+                
+                if (oji > 0 && sji > 0) {
+                    return `大さじ${oji} ＋ 小さじ${sji}`;
+                } else if (oji > 0) {
+                    return `大さじ${oji}`;
+                } else {
+                    return `小さじ${sji}`;
+                }
+            } else if (unit === '小さじ') {
+                let oji = Math.floor(val / 3);
+                let sji = Math.round((val % 3) * 10) / 10;
+
+                if (oji > 0 && sji > 0) {
+                    return `大さじ${oji} ＋ 小さじ${sji}`;
+                } else if (oji > 0) {
+                    return `大さじ${oji}`;
+                } else {
+                    return `小さじ${sji}`;
+                }
+            } else if (unit === 'カップ') {
+                // 1カップ = 200ml。0.5カップ単位などに綺麗に落とし込む
+                let rounded = Math.round(val * 2) / 2;
+                return `${rounded}カップ`;
+            } else {
+                let rounded = (Math.round(val * 10) / 10).toString();
+                return `${rounded}${unit}`;
+            }
         }
 
         function renderRecipe() {
@@ -214,26 +231,19 @@
 
             groups.forEach(groupName => {
                 const groupItems = ingredients.filter(item => item.group === groupName);
-                if (groupItems.length === 0) return; // 空のグループは描画しない
+                if (groupItems.length === 0) return;
 
                 html += `<div class="recipe-group">
                             <h2>グループ ${groupName}</h2>
                             <table>
                                 <tr>
                                     <th style="width: 50%;">材料</th>
-                                    <th style="width: 50%;">必要な分量</th>
+                                    <th style="width: 50%;">適切な道具・分量</th>
                                 </tr>`;
                 
                 groupItems.forEach(item => {
                     const calculatedAmount = item.base * ratio;
-                    const numStr = formatNumber(calculatedAmount);
-                    
-                    let displayAmount = '';
-                    if (item.unit === '大さじ' || item.unit === '小さじ') {
-                        displayAmount = `${item.unit}${numStr}`;
-                    } else {
-                        displayAmount = `${numStr}${item.unit}`;
-                    }
+                    let displayAmount = convertToToolUnit(calculatedAmount, item.unit);
                     
                     html += `<tr>
                                 <td>${item.name}</td>
@@ -247,9 +257,7 @@
             container.innerHTML = html;
         }
 
-        // ==== データ編集機能 ====
         function openEditor() {
-            // データを一時配列にディープコピーして編集画面を描画
             tempIngredients = JSON.parse(JSON.stringify(ingredients));
             renderEditorTable();
             calcPanel.style.display = 'none';
@@ -289,7 +297,6 @@
         }
 
         function addIngredient() {
-            // 末尾のグループを継承するか、デフォルトでAを追加
             const lastGroup = tempIngredients.length > 0 ? tempIngredients[tempIngredients.length - 1].group : 'A';
             tempIngredients.push({ group: lastGroup, name: '', base: 0, unit: '' });
             renderEditorTable();
@@ -301,7 +308,6 @@
         }
 
         function saveAndClose() {
-            // 編集内容を本データに上書きして計算画面へ戻る
             ingredients = JSON.parse(JSON.stringify(tempIngredients));
             editPanel.style.display = 'none';
             calcPanel.style.display = 'block';
@@ -309,15 +315,11 @@
         }
 
         function cancelEdit() {
-            // 変更を破棄して戻る
             editPanel.style.display = 'none';
             calcPanel.style.display = 'block';
         }
 
-        // イベントリスナー
         servingsInput.addEventListener('input', renderRecipe);
-
-        // 初期描画
         renderRecipe();
     </script>
 </body>
