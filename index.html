@@ -116,7 +116,6 @@
 
     <h1>🍛 カレー分量自動計算システム</h1>
 
-    <!-- 計算表示モード -->
     <div id="calc-panel">
         <div class="control-panel">
             <div class="input-group">
@@ -129,7 +128,6 @@
         <div id="recipe-container"></div>
     </div>
 
-    <!-- データ編集モード -->
     <div id="edit-panel">
         <h2>⚙️ データ編集 (基準: 15人分)</h2>
         <table>
@@ -185,41 +183,23 @@
         const calcPanel = document.getElementById('calc-panel');
         const editPanel = document.getElementById('edit-panel');
 
-        // 道具の適切な単位変換ロジック
+        // より直感的な道具・単位変換ロジック
         function convertToToolUnit(val, unit) {
-            if (unit === '大さじ') {
-                // 3大さじ ＝ 1小さじ といった細かい調整や、大さじ・小さじの自動繰り上げ
-                // 1大さじ = 3小さじ (大さじ1 = 15ml, 小さじ1 = 5ml)
-                let totalSaji = val * 3; // 小さじ換算での総量
-                let oji = Math.floor(totalSaji / 3);
-                let sji = Math.round((totalSaji % 3) * 10) / 10;
-                
-                if (oji > 0 && sji > 0) {
-                    return `大さじ${oji} ＋ 小さじ${sji}`;
-                } else if (oji > 0) {
-                    return `大さじ${oji}`;
-                } else {
-                    return `小さじ${sji}`;
-                }
-            } else if (unit === '小さじ') {
-                let oji = Math.floor(val / 3);
-                let sji = Math.round((val % 3) * 10) / 10;
-
-                if (oji > 0 && sji > 0) {
-                    return `大さじ${oji} ＋ 小さじ${sji}`;
-                } else if (oji > 0) {
-                    return `大さじ${oji}`;
-                } else {
-                    return `小さじ${sji}`;
-                }
-            } else if (unit === 'カップ') {
-                // 1カップ = 200ml。0.5カップ単位などに綺麗に落とし込む
-                let rounded = Math.round(val * 2) / 2;
-                return `${rounded}カップ`;
-            } else {
-                let rounded = (Math.round(val * 10) / 10).toString();
-                return `${rounded}${unit}`;
+            let rounded = Math.round(val * 10) / 10;
+            
+            // 小さじが多すぎる場合（例: 小さじ6以上）は、大さじ換算（1大さじ=3小さじ）にする方がわかりやすいか判定
+            if (unit === '小さじ' && rounded >= 6) {
+                let convertedOji = Math.round((rounded / 3) * 10) / 10;
+                // もしキリが良ければ大さじ表示にするなど選択可能だが、
+                // 今回は「小さじ〇杯」のまま直感的に見せるか、自動でスッキリさせる
             }
+
+            // カップの端数調整（0.5単位に丸める）
+            if (unit === 'カップ') {
+                rounded = Math.round(val * 2) / 2;
+            }
+
+            return `${rounded} ${unit}`;
         }
 
         function renderRecipe() {
@@ -238,7 +218,7 @@
                             <table>
                                 <tr>
                                     <th style="width: 50%;">材料</th>
-                                    <th style="width: 50%;">適切な道具・分量</th>
+                                    <th style="width: 50%;">必要な分量</th>
                                 </tr>`;
                 
                 groupItems.forEach(item => {
