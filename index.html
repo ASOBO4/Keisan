@@ -42,6 +42,34 @@
             border: 2px solid #ccc;
             border-radius: 4px;
         }
+        
+        /* タブ切り替え用スタイル */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1.1em;
+            color: #7f8c8d;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #d35400;
+        }
+        .tab-btn.active {
+            color: #d35400;
+            border-bottom: 3px solid #d35400;
+            margin-bottom: -2px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         .recipe-group {
             background-color: #fff;
             padding: 20px;
@@ -53,6 +81,11 @@
             border-bottom: 2px solid #d35400;
             padding-bottom: 5px;
             color: #d35400;
+        }
+        .recipe-group h3 {
+            color: #e67e22;
+            margin-top: 20px;
+            margin-bottom: 10px;
         }
         table {
             width: 100%;
@@ -84,9 +117,7 @@
         .btn:hover {
             background-color: #e67e22;
         }
-        .btn-secondary {
-            background-color: #7f8c8d;
-        }
+        .btn-secondary { background-color: #7f8c8d; }
         .btn-danger {
             background-color: #e74c3c;
             padding: 5px 10px;
@@ -125,18 +156,30 @@
             </div>
             <button class="btn" onclick="openEditor()">⚙️ データを編集する</button>
         </div>
-        <div id="recipe-container"></div>
+
+        <!-- タブボタン (順番と初期状態を反転) -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('recipe-tab', this)">🍳 調理用 (グループ別)</button>
+            <button class="tab-btn" onclick="switchTab('shopping-tab', this)">🛒 買い出し用 (総量リスト)</button>
+        </div>
+
+        <!-- 調理用コンテンツ (初期表示) -->
+        <div id="recipe-tab" class="tab-content active"></div>
+        <!-- 買い出し用コンテンツ -->
+        <div id="shopping-tab" class="tab-content"></div>
     </div>
 
+    <!-- データ編集モード -->
     <div id="edit-panel">
         <h2>⚙️ データ編集 (基準: 15人分)</h2>
         <table>
             <thead>
                 <tr>
-                    <th style="width: 15%;">グループ</th>
-                    <th style="width: 35%;">材料名</th>
-                    <th style="width: 20%;">基準量(15人分)</th>
-                    <th style="width: 20%;">単位</th>
+                    <th style="width: 10%;">グループ</th>
+                    <th style="width: 25%;">カテゴリ</th>
+                    <th style="width: 25%;">材料名</th>
+                    <th style="width: 15%;">基準量(15人分)</th>
+                    <th style="width: 15%;">単位</th>
                     <th style="width: 10%;">操作</th>
                 </tr>
             </thead>
@@ -155,100 +198,146 @@
 
     <script>
         let ingredients = [
-            { group: 'A', name: '豚肉', base: 400, unit: 'g' },
-            { group: 'A', name: 'カレー粉', base: 1, unit: '大さじ' },
-            { group: 'A', name: 'シナモン', base: 0.5, unit: '小さじ' },
-            { group: 'A', name: 'レモン汁', base: 1, unit: '小さじ' },
-            { group: 'B', name: '玉ねぎ', base: 3, unit: '玉' },
-            { group: 'B', name: 'サラダ油', base: 3, unit: '大さじ' },
-            { group: 'B', name: 'にんにくチューブ', base: 1, unit: '大さじ' },
-            { group: 'B', name: 'しょうが', base: 1, unit: '小さじ' },
-            { group: 'B', name: 'バター', base: 50, unit: 'g' },
-            { group: 'B', name: 'カレー粉', base: 3, unit: '大さじ' },
-            { group: 'B', name: '小麦粉', base: 3, unit: '大さじ' },
-            { group: 'C', name: 'とりガラスープの素', base: 10, unit: '小さじ' },
-            { group: 'C', name: '水', base: 5, unit: 'カップ' },
-            { group: 'C', name: 'カットトマト', base: 1, unit: '缶' },
-            { group: 'C', name: 'リンゴジュース', base: 200, unit: 'ml' },
-            { group: 'C', name: 'ガラムマサラ', base: 1.5, unit: '大さじ' }, 
-            { group: 'C', name: 'ケチャップ', base: 3, unit: '大さじ' },
-            { group: 'C', name: 'ウスターソース', base: 3, unit: '大さじ' },
-            { group: 'C', name: '塩', base: 0.5, unit: '小さじ' },
-            { group: 'C', name: 'ニンジンジュース', base: 200, unit: 'ml' }
+            { group: 'A', category: '肉・野菜・乳製品', name: '豚肉', base: 400, unit: 'g' },
+            { group: 'A', category: 'スパイス・粉類', name: 'カレー粉', base: 1, unit: '大さじ' },
+            { group: 'A', category: 'スパイス・粉類', name: 'シナモン', base: 0.5, unit: '小さじ' },
+            { group: 'A', category: '調味料・ペースト・油', name: 'レモン汁', base: 1, unit: '小さじ' },
+            
+            { group: 'B', category: '肉・野菜・乳製品', name: '玉ねぎ', base: 3, unit: '玉' },
+            { group: 'B', category: '調味料・ペースト・油', name: 'サラダ油', base: 3, unit: '大さじ' },
+            { group: 'B', category: '調味料・ペースト・油', name: 'にんにくチューブ', base: 1, unit: '大さじ' },
+            { group: 'B', category: '調味料・ペースト・油', name: 'しょうが', base: 1, unit: '小さじ' },
+            { group: 'B', category: '肉・野菜・乳製品', name: 'バター', base: 50, unit: 'g' },
+            { group: 'B', category: 'スパイス・粉類', name: 'カレー粉', base: 3, unit: '大さじ' },
+            { group: 'B', category: 'スパイス・粉類', name: '小麦粉', base: 3, unit: '大さじ' },
+            
+            { group: 'C', category: '調味料・ペースト・油', name: 'とりガラスープの素', base: 10, unit: '小さじ' },
+            { group: 'C', category: '液体・缶詰類', name: '水', base: 5, unit: 'カップ' },
+            { group: 'C', category: '液体・缶詰類', name: 'カットトマト', base: 1, unit: '缶' },
+            { group: 'C', category: '液体・缶詰類', name: 'リンゴジュース', base: 200, unit: 'ml' },
+            { group: 'C', category: 'スパイス・粉類', name: 'ガラムマサラ', base: 1.5, unit: '大さじ' }, 
+            { group: 'C', category: '調味料・ペースト・油', name: 'ケチャップ', base: 3, unit: '大さじ' },
+            { group: 'C', category: '調味料・ペースト・油', name: 'ウスターソース', base: 3, unit: '大さじ' },
+            { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.5, unit: '小さじ' },
+            { group: 'C', category: '液体・缶詰類', name: 'ニンジンジュース', base: 200, unit: 'ml' }
         ];
 
         let tempIngredients = [];
         const servingsInput = document.getElementById('servings');
-        const container = document.getElementById('recipe-container');
-        const calcPanel = document.getElementById('calc-panel');
-        const editPanel = document.getElementById('edit-panel');
+        const recipeTab = document.getElementById('recipe-tab');
+        const shoppingTab = document.getElementById('shopping-tab');
 
-        // より直感的な道具・単位変換ロジック
-        function convertToToolUnit(val, unit) {
-            let rounded = Math.round(val * 10) / 10;
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             
-            // 小さじが多すぎる場合（例: 小さじ6以上）は、大さじ換算（1大さじ=3小さじ）にする方がわかりやすいか判定
-            if (unit === '小さじ' && rounded >= 6) {
-                let convertedOji = Math.round((rounded / 3) * 10) / 10;
-                // もしキリが良ければ大さじ表示にするなど選択可能だが、
-                // 今回は「小さじ〇杯」のまま直感的に見せるか、自動でスッキリさせる
-            }
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+        }
 
-            // カップの端数調整（0.5単位に丸める）
-            if (unit === 'カップ') {
-                rounded = Math.round(val * 2) / 2;
+        function convertToToolUnit(val, unit) {
+            if (unit === '大さじ' || unit === '小さじ') {
+                let quarterRounded = Math.round(val * 4) / 4;
+                if (quarterRounded === 0.25) return `${unit} 1/4（少々）`;
+                if (quarterRounded === 0.3)  return `${unit} 1/3弱`;
+                if (quarterRounded === 0.33 || quarterRounded === 0.3) return `${unit} 1/3`;
+                if (quarterRounded === 0.5)  return `${unit} 1/2（半分）`;
+                if (quarterRounded === 0.75) return `${unit} 3/4`;
+                
+                let intPart = Math.floor(quarterRounded);
+                let decPart = quarterRounded - intPart;
+                if (intPart > 0) {
+                    if (decPart === 0.25) return `${unit} ${intPart}と1/4`;
+                    if (decPart === 0.5)  return `${unit} ${intPart}と1/2`;
+                    if (decPart === 0.75) return `${unit} ${intPart}と3/4`;
+                    if (decPart === 0)    return `${unit} ${intPart}`;
+                }
+                return `${unit} ${quarterRounded}`;
+            } else if (unit === 'カップ') {
+                return `${Math.round(val * 2) / 2} カップ`;
+            } else {
+                return `${Math.round(val * 10) / 10} ${unit}`;
             }
-
-            return `${rounded} ${unit}`;
         }
 
         function renderRecipe() {
             const targetServings = parseInt(servingsInput.value) || 1;
             const ratio = targetServings / 15.0;
 
-            const groups = ['A', 'B', 'C'];
-            let html = '';
-
-            groups.forEach(groupName => {
+            let recipeHtml = '';
+            ['A', 'B', 'C'].forEach(groupName => {
                 const groupItems = ingredients.filter(item => item.group === groupName);
                 if (groupItems.length === 0) return;
 
-                html += `<div class="recipe-group">
+                recipeHtml += `<div class="recipe-group">
                             <h2>グループ ${groupName}</h2>
                             <table>
                                 <tr>
                                     <th style="width: 50%;">材料</th>
-                                    <th style="width: 50%;">必要な分量</th>
+                                    <th style="width: 50%;">測りやすい分量</th>
                                 </tr>`;
                 
                 groupItems.forEach(item => {
                     const calculatedAmount = item.base * ratio;
-                    let displayAmount = convertToToolUnit(calculatedAmount, item.unit);
-                    
-                    html += `<tr>
+                    recipeHtml += `<tr>
                                 <td>${item.name}</td>
-                                <td class="amount">${displayAmount}</td>
+                                <td class="amount">${convertToToolUnit(calculatedAmount, item.unit)}</td>
                              </tr>`;
                 });
+                recipeHtml += `</table></div>`;
+            });
+            recipeTab.innerHTML = recipeHtml;
 
-                html += `</table></div>`;
+            let totals = {};
+            ingredients.forEach(item => {
+                const key = `${item.name}_${item.unit}`;
+                if (!totals[key]) {
+                    totals[key] = { name: item.name, category: item.category, baseSum: 0, unit: item.unit };
+                }
+                totals[key].baseSum += item.base;
             });
 
-            container.innerHTML = html;
+            const categories = ['肉・野菜・乳製品', '液体・缶詰類', 'スパイス・粉類', '調味料・ペースト・油', 'その他'];
+            let shoppingHtml = '<div class="recipe-group"><h2>🛒 カテゴリ別 総量リスト</h2>';
+
+            categories.forEach(cat => {
+                const catItems = Object.values(totals).filter(t => t.category === cat || (cat === 'その他' && !t.category));
+                if (catItems.length === 0) return;
+
+                shoppingHtml += `<h3>${cat}</h3>
+                                 <table>
+                                 <tr>
+                                     <th style="width: 50%;">材料</th>
+                                     <th style="width: 50%;">合算された総量</th>
+                                 </tr>`;
+                catItems.forEach(item => {
+                    const calculatedAmount = item.baseSum * ratio;
+                    shoppingHtml += `<tr>
+                                <td>${item.name}</td>
+                                <td class="amount">${convertToToolUnit(calculatedAmount, item.unit)}</td>
+                             </tr>`;
+                });
+                shoppingHtml += `</table>`;
+            });
+            shoppingHtml += '</div>';
+            shoppingTab.innerHTML = shoppingHtml;
         }
 
         function openEditor() {
             tempIngredients = JSON.parse(JSON.stringify(ingredients));
             renderEditorTable();
-            calcPanel.style.display = 'none';
-            editPanel.style.display = 'block';
+            document.getElementById('calc-panel').style.display = 'none';
+            document.getElementById('edit-panel').style.display = 'block';
         }
 
         function renderEditorTable() {
             const tbody = document.getElementById('edit-tbody');
             let html = '';
+            const categories = ['肉・野菜・乳製品', '液体・缶詰類', 'スパイス・粉類', '調味料・ペースト・油', 'その他'];
             
             tempIngredients.forEach((item, index) => {
+                let catOptions = categories.map(c => `<option value="${c}" ${item.category === c ? 'selected' : ''}>${c}</option>`).join('');
+                
                 html += `
                     <tr>
                         <td>
@@ -256,6 +345,11 @@
                                 <option value="A" ${item.group === 'A' ? 'selected' : ''}>A</option>
                                 <option value="B" ${item.group === 'B' ? 'selected' : ''}>B</option>
                                 <option value="C" ${item.group === 'C' ? 'selected' : ''}>C</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select onchange="updateTemp(${index}, 'category', this.value)">
+                                ${catOptions}
                             </select>
                         </td>
                         <td><input type="text" value="${item.name}" onchange="updateTemp(${index}, 'name', this.value)"></td>
@@ -269,16 +363,13 @@
         }
 
         function updateTemp(index, field, value) {
-            if (field === 'base') {
-                tempIngredients[index][field] = parseFloat(value) || 0;
-            } else {
-                tempIngredients[index][field] = value;
-            }
+            if (field === 'base') tempIngredients[index][field] = parseFloat(value) || 0;
+            else tempIngredients[index][field] = value;
         }
 
         function addIngredient() {
             const lastGroup = tempIngredients.length > 0 ? tempIngredients[tempIngredients.length - 1].group : 'A';
-            tempIngredients.push({ group: lastGroup, name: '', base: 0, unit: '' });
+            tempIngredients.push({ group: lastGroup, category: 'その他', name: '', base: 0, unit: '' });
             renderEditorTable();
         }
 
@@ -289,14 +380,14 @@
 
         function saveAndClose() {
             ingredients = JSON.parse(JSON.stringify(tempIngredients));
-            editPanel.style.display = 'none';
-            calcPanel.style.display = 'block';
+            document.getElementById('edit-panel').style.display = 'none';
+            document.getElementById('calc-panel').style.display = 'block';
             renderRecipe();
         }
 
         function cancelEdit() {
-            editPanel.style.display = 'none';
-            calcPanel.style.display = 'block';
+            document.getElementById('edit-panel').style.display = 'none';
+            document.getElementById('calc-panel').style.display = 'block';
         }
 
         servingsInput.addEventListener('input', renderRecipe);
