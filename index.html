@@ -298,4 +298,11 @@
         function updateTemp(idx, f, v) { tempIngredients[idx][f] = (f === 'base') ? parseFloat(v) || 0 : v; }
         function addIngredient() { tempIngredients.push({ group: 'A', category: 'その他', name: '', base: 0, unit: '' }); renderEditorTable(); }
         function removeIngredient(idx) { tempIngredients.splice(idx, 1); renderEditorTable(); }
-        function saveAndClose() { ingredients = JSON.parse(JSON.stringify(tempIngredients)); cancelEdit();
+        function saveAndClose() { ingredients = JSON.parse(JSON.stringify(tempIngredients)); cancelEdit(); renderRecipe(); }
+        function cancelEdit() { document.getElementById('edit-panel').style.display = 'none'; document.getElementById('calc-panel').style.display = 'block'; }
+        
+        servingsInput.addEventListener('input', renderRecipe);
+        renderRecipe();
+    </script>
+</body>
+</html>
