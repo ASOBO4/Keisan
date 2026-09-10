@@ -142,6 +142,7 @@
         <div id="shopping-tab" class="tab-content"></div>
     </div>
 
+    <!-- データ編集モード -->
     <div id="edit-panel">
         <h2>⚙️ データ編集 (基準: 15人分)</h2>
         <table>
@@ -187,7 +188,8 @@
             { group: 'C', category: 'スパイス・粉類', name: 'ガラムマサラ', base: 1.5, unit: '大さじ' }, 
             { group: 'C', category: '調味料・ペースト・油', name: 'ケチャップ', base: 3, unit: '大さじ' },
             { group: 'C', category: '調味料・ペースト・油', name: 'ウスターソース', base: 3, unit: '大さじ' },
-            { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.125, unit: '小さじ' }, // ← 0.5から0.125に修正しました
+            { group: 'C', category: '調味料・ペースト・油', name: 'マーマレード', base: 2, unit: '大さじ' }, // ← 追加
+            { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.125, unit: '小さじ' },
             { group: 'C', category: '液体・缶詰類', name: 'ニンジンジュース', base: 200, unit: 'ml' }
         ];
 
@@ -203,12 +205,11 @@
 
         function convertToToolUnit(val, unit) {
             if (unit === '大さじ' || unit === '小さじ') {
-                let rounded = Math.round(val * 1000) / 1000; // 精度を少し上げました
+                let rounded = Math.round(val * 1000) / 1000;
                 let intPart = Math.floor(rounded);
                 let dec = rounded - intPart;
                 let frac = "";
                 
-                // 1/8付近の場合に「少々 / 少し」を付与
                 if (dec > 0.03 && dec <= 0.18) frac = (unit === '小さじ') ? "1/8（少々 / 少し）" : "1/8";
                 else if (dec > 0.18 && dec <= 0.28) frac = "1/4";
                 else if (dec > 0.28 && dec <= 0.38) frac = "1/3";
