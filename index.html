@@ -3,117 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カレー分量自動計算システム</title>
+    <title>カレー自動計算 & 画面自動フィット・ファミレス風ナビ</title>
     <style>
-        body {
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
+            background-color: #111;
+            color: #fff;
         }
-        h1 {
-            color: #d35400;
-            text-align: center;
+        
+        /* 全体コンテナ：画面に完全自動フィット */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            padding: 15px;
+            gap: 12px;
         }
-        .control-panel {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+
+        /* コントロールヘッダー（人数設定とタブ） */
+        .header-panel {
+            background-color: #1a1a1a;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 10px;
+            flex-shrink: 0;
         }
         .input-group {
             display: flex;
             align-items: center;
-            font-size: 1.2em;
+            font-size: 1.1em;
+            color: #ddd;
         }
         .input-group input[type="number"] {
-            width: 80px;
+            width: 70px;
             font-size: 1.2em;
-            padding: 5px;
-            margin: 0 10px;
+            padding: 4px;
+            margin: 0 8px;
             text-align: center;
-            border: 2px solid #ccc;
+            border: 2px solid #555;
+            background-color: #222;
+            color: #fff;
             border-radius: 4px;
         }
-        
+
         .tabs {
             display: flex;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #ccc;
+            gap: 5px;
         }
         .tab-btn {
-            padding: 12px 20px;
+            padding: 8px 15px;
             cursor: pointer;
-            border: none;
-            background: transparent;
-            font-size: 1.1em;
-            color: #7f8c8d;
+            border: 1px solid #444;
+            background: #222;
+            color: #aaa;
+            font-size: 0.95em;
             font-weight: bold;
+            border-radius: 6px;
             transition: all 0.2s;
         }
-        .tab-btn:hover { color: #d35400; }
+        .tab-btn:hover { color: #fff; background: #333; }
         .tab-btn.active {
-            color: #d35400;
-            border-bottom: 3px solid #d35400;
-            margin-bottom: -2px;
+            color: #fff;
+            background: #d35400;
+            border-color: #e67e22;
         }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
 
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        .tab-content.active { display: flex; }
+
+        /* 📟 ファミレス風サイネージ：自動フィットメイン画面 */
+        .nav-container {
+            flex: 1;
+            background: #000;
+            padding: 20px;
+            border-radius: 14px;
+            border: 4px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+        
+        .step-indicator {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            color: #f39c12;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .step-group-title {
+            font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+            color: #95a5a6;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+
+        /* 項目と分量を表示する中央ボックス（自動拡大） */
+        .step-content-box {
+            width: 100%;
+            flex: 1;
+            margin: 10px 0;
+            padding: 15px;
+            background-color: #151515;
+            border: 4px solid #f1c40f;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.1);
+        }
+        .step-item-name {
+            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 5px;
+            line-height: 1.1;
+        }
+        .step-item-amount {
+            font-size: clamp(3.5rem, 12vw, 9rem);
+            font-weight: 900;
+            color: #2ecc71;
+            line-height: 1.1;
+            text-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+            word-break: break-all;
+        }
+
+        /* ナビ操作ボタン（画面下部に固定配置） */
+        .nav-controls {
+            width: 100%;
+            display: flex;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: clamp(15px, 3vh, 25px);
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            background-color: #e67e22;
+            color: white;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        .nav-btn:hover { background-color: #f39c12; transform: translateY(-2px); }
+        .nav-btn:active { transform: translateY(0); }
+        .nav-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* 通常リスト・編集画面用スタイル（スクロール対応） */
+        .scrollable-content {
+            flex: 1;
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-y: auto;
+        }
         .recipe-group {
             background-color: #fff;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .recipe-group h2 {
-            border-bottom: 2px solid #d35400;
-            padding-bottom: 5px;
-            color: #d35400;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
+        .recipe-group h2 { border-bottom: 2px solid #d35400; padding-bottom: 5px; color: #d35400; margin-top: 0; }
+        .recipe-group h3 { color: #e67e22; margin-top: 15px; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
         th { background-color: #f2f2f2; }
-        .amount {
-            font-weight: bold;
-            color: #2c3e50;
-            font-size: 1.1em;
-        }
+        .amount { font-weight: bold; color: #2c3e50; font-size: 1.1em; }
+        
         .btn {
-            padding: 10px 15px;
+            padding: 8px 15px;
             background-color: #d35400;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1em;
-            transition: background 0.2s;
         }
         .btn:hover { background-color: #e67e22; }
-        .btn-secondary { background-color: #7f8c8d; }
-        .btn-danger { background-color: #e74c3c; padding: 5px 10px; font-size: 0.9em; }
+        .btn-danger { background-color: #e74c3c; padding: 4px 8px; }
+
         #edit-panel {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: none;
+            flex: 1;
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-y: auto;
         }
         #edit-panel input, #edit-panel select { width: 90%; padding: 5px; font-size: 1em; }
         .edit-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
@@ -121,50 +221,73 @@
 </head>
 <body>
 
-    <h1>🍛 カレー分量自動計算システム</h1>
-
-    <div id="calc-panel">
-        <div class="control-panel">
+    <div class="app-container" id="calc-panel">
+        <!-- ヘッダーパネル -->
+        <div class="header-panel">
             <div class="input-group">
                 <label for="servings">作りたい人数：</label>
                 <input type="number" id="servings" value="15" min="1" max="100">
                 <span>人分</span>
             </div>
-            <button class="btn" onclick="openEditor()">⚙️ データを編集する</button>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('recipe-tab', this)">🍳 調理一覧</button>
+                <button class="tab-btn" onclick="switchTab('nav-tab', this)">📟 巨大ナビ</button>
+                <button class="tab-btn" onclick="switchTab('shopping-tab', this)">🛒 買い出し</button>
+            </div>
+            <button class="btn" onclick="openEditor()">⚙️ データ編集</button>
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('recipe-tab', this)">🍳 調理用 (グループ別)</button>
-            <button class="tab-btn" onclick="switchTab('shopping-tab', this)">🛒 買い出し用 (総量リスト)</button>
+        <!-- 1. 調理用一覧 (デフォルト表示・スクロール対応) -->
+        <div id="recipe-tab" class="tab-content scrollable-content active"></div>
+
+        <!-- 2. 巨大ファミレス風ナビ (自動フィット) -->
+        <div id="nav-tab" class="tab-content">
+            <div class="nav-container">
+                <div>
+                    <div class="step-indicator" id="step-counter">STEP 01 / 21</div>
+                    <div class="step-group-title" id="step-group-name">【 グループ A 】 肉・野菜・乳製品</div>
+                </div>
+                
+                <div class="step-content-box">
+                    <div class="step-item-name" id="step-name">豚肉</div>
+                    <div class="step-item-amount" id="step-amount">400 g</div>
+                </div>
+
+                <div class="nav-controls">
+                    <button class="nav-btn" id="prev-btn" onclick="prevStep()" style="background-color: #555;">◀ 前の項目</button>
+                    <button class="nav-btn" id="next-btn" onclick="nextStep()">次の項目 ▶</button>
+                </div>
+            </div>
         </div>
 
-        <div id="recipe-tab" class="tab-content active"></div>
-        <div id="shopping-tab" class="tab-content"></div>
+        <!-- 3. 買い出し用一覧 (スクロール対応) -->
+        <div id="shopping-tab" class="tab-content scrollable-content"></div>
     </div>
 
     <!-- データ編集モード -->
-    <div id="edit-panel">
+    <div class="app-container" id="edit-panel">
         <h2>⚙️ データ編集 (基準: 15人分)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 10%;">G</th>
-                    <th style="width: 20%;">カテゴリ</th>
-                    <th style="width: 25%;">材料名</th>
-                    <th style="width: 15%;">基準量</th>
-                    <th style="width: 15%;">単位</th>
-                    <th style="width: 15%;">操作</th>
-                </tr>
-            </thead>
-            <tbody id="edit-tbody"></tbody>
-        </table>
-        
-        <div style="margin-top: 15px;">
-            <button class="btn btn-secondary" onclick="addIngredient()">＋ 新しい材料を追加</button>
+        <div style="flex: 1; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">G</th>
+                        <th style="width: 20%;">カテゴリ</th>
+                        <th style="width: 25%;">材料名</th>
+                        <th style="width: 15%;">基準量</th>
+                        <th style="width: 15%;">単位</th>
+                        <th style="width: 15%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="edit-tbody"></tbody>
+            </table>
         </div>
-        <div class="edit-actions">
-            <button class="btn btn-secondary" onclick="cancelEdit()">キャンセル</button>
-            <button class="btn" onclick="saveAndClose()">保存して戻る</button>
+        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn" onclick="addIngredient()">＋ 新しい材料を追加</button>
+            <div class="edit-actions" style="margin: 0;">
+                <button class="btn" style="background-color: #7f8c8d;" onclick="cancelEdit()">キャンセル</button>
+                <button class="btn" onclick="saveAndClose()">保存して戻る</button>
+            </div>
         </div>
     </div>
 
@@ -188,19 +311,20 @@
             { group: 'C', category: 'スパイス・粉類', name: 'ガラムマサラ', base: 1.5, unit: '大さじ' }, 
             { group: 'C', category: '調味料・ペースト・油', name: 'ケチャップ', base: 3, unit: '大さじ' },
             { group: 'C', category: '調味料・ペースト・油', name: 'ウスターソース', base: 3, unit: '大さじ' },
-            { group: 'C', category: '調味料・ペースト・油', name: 'マーマレード', base: 2, unit: '大さじ' }, // ← 追加
+            { group: 'C', category: '調味料・ペースト・油', name: 'マーマレード', base: 2, unit: '大さじ' },
             { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.125, unit: '小さじ' },
             { group: 'C', category: '液体・缶詰類', name: 'ニンジンジュース', base: 200, unit: 'ml' }
         ];
 
         let tempIngredients = [];
+        let currentStep = 0;
         const servingsInput = document.getElementById('servings');
 
         function switchTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            btnElement.classList.add('active');
+            if (btnElement) btnElement.classList.add('active');
         }
 
         function convertToToolUnit(val, unit) {
@@ -232,9 +356,44 @@
             }
         }
 
+        function updateNavStep() {
+            if (ingredients.length === 0) return;
+            if (currentStep < 0) currentStep = 0;
+            if (currentStep >= ingredients.length) currentStep = ingredients.length - 1;
+
+            const ratio = (parseInt(servingsInput.value) || 1) / 15.0;
+            const item = ingredients[currentStep];
+            const calculatedAmount = convertToToolUnit(item.base * ratio, item.unit);
+
+            document.getElementById('step-counter').innerText = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(ingredients.length).padStart(2, '0')}`;
+            document.getElementById('step-group-name').innerText = `【 グループ ${item.group} 】 ${item.category}`;
+            document.getElementById('step-name').innerText = item.name;
+            document.getElementById('step-amount').innerText = calculatedAmount;
+
+            document.getElementById('prev-btn').disabled = (currentStep === 0);
+            document.getElementById('next-btn').innerText = (currentStep === ingredients.length - 1) ? '完了 🎉' : '次の項目 ▶';
+        }
+
+        function nextStep() {
+            if (currentStep < ingredients.length - 1) {
+                currentStep++;
+                updateNavStep();
+            } else {
+                alert('すべての手順が完了しました！美味しいカレーをお楽しみください！');
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateNavStep();
+            }
+        }
+
         function renderRecipe() {
             const ratio = (parseInt(servingsInput.value) || 1) / 15.0;
 
+            // 1. 調理用一覧
             let recipeHtml = '';
             ['A', 'B', 'C'].forEach(groupName => {
                 const items = ingredients.filter(i => i.group === groupName);
@@ -248,39 +407,45 @@
             });
             document.getElementById('recipe-tab').innerHTML = recipeHtml;
 
+            // 2. 買い出し用一覧
             let totals = {};
             ingredients.forEach(i => {
                 const key = `${i.name}_${i.unit}`;
-                if (!totals[key]) totals[key] = { name: i.name, category: i.category, sum: 0, unit: i.unit };
+                if (!totals[key]) {
+                    totals[key] = { name: i.name, category: i.category, sum: 0, unit: i.unit };
+                }
                 totals[key].sum += i.base;
             });
+
             const categories = ['肉・野菜・乳製品', '液体・缶詰類', 'スパイス・粉類', '調味料・ペースト・油', 'その他'];
             let shoppingHtml = '<div class="recipe-group"><h2>🛒 カテゴリ別 総量リスト</h2>';
+            
             categories.forEach(cat => {
-                const items = Object.values(totals).filter(t => t.category === cat || (cat === 'その他' && !t.category));
-                if (items.length === 0) return;
+                const catItems = Object.values(totals).filter(t => t.category === cat || (cat === 'その他' && !t.category));
+                if (catItems.length === 0) return;
                 shoppingHtml += `<h3>${cat}</h3><table><tr><th style="width: 50%;">材料</th><th style="width: 50%;">総量</th></tr>`;
-                items.forEach(i => {
+                catItems.forEach(i => {
                     shoppingHtml += `<tr><td>${i.name}</td><td class="amount">${convertToToolUnit(i.sum * ratio, i.unit)}</td></tr>`;
                 });
                 shoppingHtml += `</table>`;
             });
             shoppingHtml += '</div>';
             document.getElementById('shopping-tab').innerHTML = shoppingHtml;
+
+            updateNavStep();
         }
 
         function openEditor() {
             tempIngredients = JSON.parse(JSON.stringify(ingredients));
             renderEditorTable();
             document.getElementById('calc-panel').style.display = 'none';
-            document.getElementById('edit-panel').style.display = 'block';
+            document.getElementById('edit-panel').style.display = 'flex';
         }
         function renderEditorTable() {
             const tbody = document.getElementById('edit-tbody');
-            const cats = ['肉・野菜・乳製品', '液体・缶詰類', 'スパイス・粉類', '調味料・ペースト・油', 'その他'];
             let html = '';
             tempIngredients.forEach((i, idx) => {
-                let catOpts = cats.map(c => `<option value="${c}" ${i.category === c ? 'selected' : ''}>${c}</option>`).join('');
+                let catOpts = ['肉・野菜・乳製品', '液体・缶詰類', 'スパイス・粉類', '調味料・ペースト・油', 'その他'].map(c => `<option value="${c}" ${i.category === c ? 'selected' : ''}>${c}</option>`).join('');
                 html += `<tr>
                     <td><select onchange="updateTemp(${idx}, 'group', this.value)">
                         <option value="A" ${i.group === 'A' ? 'selected' : ''}>A</option>
@@ -299,8 +464,8 @@
         function updateTemp(idx, f, v) { tempIngredients[idx][f] = (f === 'base') ? parseFloat(v) || 0 : v; }
         function addIngredient() { tempIngredients.push({ group: 'A', category: 'その他', name: '', base: 0, unit: '' }); renderEditorTable(); }
         function removeIngredient(idx) { tempIngredients.splice(idx, 1); renderEditorTable(); }
-        function saveAndClose() { ingredients = JSON.parse(JSON.stringify(tempIngredients)); cancelEdit(); renderRecipe(); }
-        function cancelEdit() { document.getElementById('edit-panel').style.display = 'none'; document.getElementById('calc-panel').style.display = 'block'; }
+        function saveAndClose() { ingredients = JSON.parse(JSON.stringify(tempIngredients)); cancelEdit(); currentStep = 0; renderRecipe(); }
+        function cancelEdit() { document.getElementById('edit-panel').style.display = 'none'; document.getElementById('calc-panel').style.display = 'flex'; }
         
         servingsInput.addEventListener('input', renderRecipe);
         renderRecipe();
