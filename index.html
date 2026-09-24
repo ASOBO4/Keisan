@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カレー自動計算 & 単位自動換算ナビ</title>
+    <title>カレー自動計算 & 調理時間最適化ナビ</title>
     <style>
         * { box-sizing: border-box; }
         body, html {
@@ -315,6 +315,7 @@
             { group: 'C', category: 'スパイス・粉類', name: 'ガラムマサラ', base: 6, unit: '大さじ' }, 
             { group: 'C', category: '調味料・ペースト・油', name: 'ケチャップ', base: 12, unit: '大さじ' },
             { group: 'C', category: '調味料・ペースト・油', name: 'ウスターソース', base: 12, unit: '大さじ' },
+            { group: 'C', category: '調味料・ペースト・油', name: 'マーマレード', base: 8, unit: '大さじ' },
             { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.5, unit: '小さじ' },
             { group: 'C', category: '液体・缶詰類', name: 'ニンジンジュース', base: 800, unit: 'ml' }
         ];
@@ -332,7 +333,7 @@
                 stepNum: '02',
                 group: 'B',
                 groupTitle: '【 グループ B 】 玉ねぎ炒め',
-                action: '① フライパンに油を敷き、玉ねぎを30分炒める',
+                action: '① フライパンに油を敷き、玉ねぎを【1時間】じっくり炒める',
                 target: 'サラダ油 ＋ 玉ねぎ',
                 amountCalc: (ratio) => `サラダ油 ${autoConvertUnit(12*ratio, '大さじ')} / 玉ねぎ ${Math.round(12*ratio)}玉`
             },
@@ -364,17 +365,17 @@
                 stepNum: '06',
                 group: 'C',
                 groupTitle: '【 グループ C 】 ② すべて入れてあたためる',
-                action: '① 水・トマト・ジュース類、各種スパイスやソースを全て入れてあたためる',
-                target: '水・トマト缶・ジュース・ガラムマサラ・ケチャップ・ソース・塩',
-                amountCalc: (ratio) => `水 ${Math.round(20*ratio*10)/10}カップ / トマト缶 ${Math.round(4*ratio*10)/10}缶`
+                action: '① 水・トマト・ジュース類、各種スパイス・ソース・マーマレード等を全て入れてあたためる',
+                target: '水・トマト缶・ジュース・ガラムマサラ・ケチャップ・ソース・マーマレード・塩',
+                amountCalc: (ratio) => `水 ${Math.round(20*ratio*10)/10}カップ / マーマレード ${autoConvertUnit(8*ratio, '大さじ')}`
             },
             {
                 stepNum: '07',
                 group: 'C',
                 groupTitle: '【 グループ C 】 ③ Bの③を入れて煮込む',
-                action: '② Bの③（炒めたルー・肉）を入れてじっくり煮込む',
+                action: '② Bの③（炒めたルー・肉）を入れて【45分】煮込む',
                 target: 'グループBで炒めた全材料の合流 ＆ 煮込み',
-                amountCalc: (ratio) => `煮込み工程（全体をよく混ぜて仕上げる）`
+                amountCalc: (ratio) => `煮込み工程（45分間しっかりと煮込む）`
             }
         ];
 
@@ -389,7 +390,6 @@
             if (btnElement) btnElement.classList.add('active');
         }
 
-        // 小さじが3杯以上になったら大さじに自動換算するロジック
         function autoConvertUnit(val, unit) {
             let rounded = Math.round(val * 10) / 10;
             let ml = (unit === '大さじ') ? rounded * 15 : rounded * 5;
@@ -402,7 +402,6 @@
                     return `大さじ ${rounded}（約 ${Math.round(ml)} ml）`;
                 }
             } else {
-                // 小さじの場合：もし小さじ3以上（15ml以上）になれば大さじ表示に自動変換
                 if (ml >= 15) {
                     let tbspVal = Math.round((ml / 15) * 10) / 10;
                     return `大さじ ${tbspVal}（小さじ ${rounded} ＝ 約 ${Math.round(ml)} ml）`;
