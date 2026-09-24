@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カレー自動計算 & 画面自動フィット・ファミレス風ナビ</title>
+    <title>カレー自動計算 & 手順同期型ファミレス風ナビ</title>
     <style>
         * { box-sizing: border-box; }
         body, html {
@@ -17,40 +17,38 @@
             color: #fff;
         }
         
-        /* 全体コンテナ：画面に完全自動フィット */
         .app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
             width: 100vw;
-            padding: 15px;
-            gap: 12px;
+            padding: 10px;
+            gap: 8px;
         }
 
-        /* コントロールヘッダー（人数設定とタブ） */
         .header-panel {
             background-color: #1a1a1a;
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 8px 15px;
+            border-radius: 8px;
             border: 2px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             flex-shrink: 0;
         }
         .input-group {
             display: flex;
             align-items: center;
-            font-size: 1.1em;
+            font-size: 1em;
             color: #ddd;
         }
         .input-group input[type="number"] {
-            width: 70px;
-            font-size: 1.2em;
+            width: 65px;
+            font-size: 1.1em;
             padding: 4px;
-            margin: 0 8px;
+            margin: 0 6px;
             text-align: center;
             border: 2px solid #555;
             background-color: #222;
@@ -63,12 +61,12 @@
             gap: 5px;
         }
         .tab-btn {
-            padding: 8px 15px;
+            padding: 6px 12px;
             cursor: pointer;
             border: 1px solid #444;
             background: #222;
             color: #aaa;
-            font-size: 0.95em;
+            font-size: 0.9em;
             font-weight: bold;
             border-radius: 6px;
             transition: all 0.2s;
@@ -88,185 +86,192 @@
         }
         .tab-content.active { display: flex; }
 
-        /* 📟 ファミレス風サイネージ：自動フィットメイン画面 */
+        /* 📟 ファミレス風サイネージ：見切れ防止自動フィット */
         .nav-container {
             flex: 1;
             background: #000;
-            padding: 20px;
-            border-radius: 14px;
-            border: 4px solid #333;
+            padding: 15px;
+            border-radius: 12px;
+            border: 3px solid #333;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
             text-align: center;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
             overflow: hidden;
+            min-height: 0; /* フレックスボックス内の確実な収まり */
         }
         
         .step-indicator {
-            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-size: clamp(1rem, 2vw, 1.5rem);
             color: #f39c12;
             font-weight: bold;
             letter-spacing: 2px;
         }
         .step-group-title {
-            font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+            font-size: clamp(1.2rem, 2.5vw, 2rem);
             color: #95a5a6;
-            margin: 5px 0;
+            margin: 4px 0;
             font-weight: bold;
         }
 
-        /* 項目と分量を表示する中央ボックス（自動拡大） */
         .step-content-box {
             width: 100%;
             flex: 1;
-            margin: 10px 0;
-            padding: 15px;
+            margin: 8px 0;
+            padding: 12px;
             background-color: #151515;
-            border: 4px solid #f1c40f;
-            border-radius: 12px;
+            border: 3px solid #f1c40f;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 30px rgba(241, 196, 15, 0.1);
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.1);
+            overflow: hidden;
+            min-height: 0;
+        }
+        .step-action-label {
+            font-size: clamp(1.2rem, 3.5vw, 2.5rem);
+            color: #f1c40f;
+            font-weight: bold;
+            background: #222;
+            padding: 6px 15px;
+            border-radius: 6px;
+            border: 2px dashed #f1c40f;
+            margin-bottom: 5px;
         }
         .step-item-name {
-            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-size: clamp(1.3rem, 4vw, 3rem);
             font-weight: 900;
             color: #ffffff;
-            margin-bottom: 5px;
             line-height: 1.1;
+            margin-bottom: 5px;
         }
         .step-item-amount {
-            font-size: clamp(3.5rem, 12vw, 9rem);
+            font-size: clamp(2rem, 7vw, 5.5rem); /* 見切れないよう最大サイズを調整 */
             font-weight: 900;
             color: #2ecc71;
             line-height: 1.1;
-            text-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+            text-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
             word-break: break-all;
         }
 
-        /* ナビ操作ボタン（画面下部に固定配置） */
         .nav-controls {
             width: 100%;
             display: flex;
-            gap: 20px;
+            gap: 15px;
             flex-shrink: 0;
         }
         .nav-btn {
             flex: 1;
-            padding: clamp(15px, 3vh, 25px);
-            font-size: clamp(1.2rem, 3vw, 2rem);
+            padding: clamp(10px, 2vh, 18px);
+            font-size: clamp(1rem, 2.5vw, 1.6rem);
             font-weight: bold;
             cursor: pointer;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             background-color: #e67e22;
             color: white;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
             transition: all 0.1s;
         }
         .nav-btn:hover { background-color: #f39c12; transform: translateY(-2px); }
         .nav-btn:active { transform: translateY(0); }
         .nav-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; box-shadow: none; transform: none; }
 
-        /* 通常リスト・編集画面用スタイル（スクロール対応） */
         .scrollable-content {
             flex: 1;
             background: #fff;
             color: #333;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 8px;
             overflow-y: auto;
         }
         .recipe-group {
             background-color: #fff;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
-        .recipe-group h2 { border-bottom: 2px solid #d35400; padding-bottom: 5px; color: #d35400; margin-top: 0; }
-        .recipe-group h3 { color: #e67e22; margin-top: 15px; margin-bottom: 8px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+        .recipe-group h2 { border-bottom: 2px solid #d35400; padding-bottom: 4px; color: #d35400; margin-top: 0; font-size: 1.2em; }
+        .recipe-group h3 { color: #e67e22; margin-top: 12px; margin-bottom: 6px; font-size: 1.1em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.95em; }
         th { background-color: #f2f2f2; }
-        .amount { font-weight: bold; color: #2c3e50; font-size: 1.1em; }
+        .amount { font-weight: bold; color: #2c3e50; }
         
         .btn {
-            padding: 8px 15px;
+            padding: 6px 12px;
             background-color: #d35400;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 0.9em;
         }
         .btn:hover { background-color: #e67e22; }
-        .btn-danger { background-color: #e74c3c; padding: 4px 8px; }
+        .btn-danger { background-color: #e74c3c; padding: 3px 6px; }
 
         #edit-panel {
             display: none;
             flex: 1;
             background: #fff;
             color: #333;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 8px;
             overflow-y: auto;
         }
-        #edit-panel input, #edit-panel select { width: 90%; padding: 5px; font-size: 1em; }
-        .edit-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
+        #edit-panel input, #edit-panel select { width: 90%; padding: 4px; font-size: 0.95em; }
+        .edit-actions { margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end; }
     </style>
 </head>
 <body>
 
     <div class="app-container" id="calc-panel">
-        <!-- ヘッダーパネル -->
         <div class="header-panel">
             <div class="input-group">
                 <label for="servings">作りたい人数：</label>
-                <input type="number" id="servings" value="15" min="1" max="100">
+                <input type="number" id="servings" value="15" min="1" max="500">
                 <span>人分</span>
             </div>
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('recipe-tab', this)">🍳 調理一覧</button>
-                <button class="tab-btn" onclick="switchTab('nav-tab', this)">📟 巨大ナビ</button>
+                <button class="tab-btn" onclick="switchTab('nav-tab', this)">📟 巨大ナビ（手順同期）</button>
                 <button class="tab-btn" onclick="switchTab('shopping-tab', this)">🛒 買い出し</button>
             </div>
             <button class="btn" onclick="openEditor()">⚙️ データ編集</button>
         </div>
 
-        <!-- 1. 調理用一覧 (デフォルト表示・スクロール対応) -->
         <div id="recipe-tab" class="tab-content scrollable-content active"></div>
 
-        <!-- 2. 巨大ファミレス風ナビ (自動フィット) -->
         <div id="nav-tab" class="tab-content">
             <div class="nav-container">
                 <div>
-                    <div class="step-indicator" id="step-counter">STEP 01 / 21</div>
-                    <div class="step-group-title" id="step-group-name">【 グループ A 】 肉・野菜・乳製品</div>
+                    <div class="step-indicator" id="step-counter">STEP 01 / 07</div>
+                    <div class="step-group-title" id="step-group-name">【 グループA 】 下ごしらえ</div>
                 </div>
                 
                 <div class="step-content-box">
-                    <div class="step-item-name" id="step-name">豚肉</div>
-                    <div class="step-item-amount" id="step-amount">400 g</div>
+                    <div class="step-action-label" id="step-action">① 豚肉に下味を揉み込む</div>
+                    <div class="step-item-name" id="step-name">豚肉 ＋ カレー粉・シナモン・レモン</div>
+                    <div class="step-item-amount" id="step-amount">1.6kg</div>
                 </div>
 
                 <div class="nav-controls">
-                    <button class="nav-btn" id="prev-btn" onclick="prevStep()" style="background-color: #555;">◀ 前の項目</button>
-                    <button class="nav-btn" id="next-btn" onclick="nextStep()">次の項目 ▶</button>
+                    <button class="nav-btn" id="prev-btn" onclick="prevStep()" style="background-color: #555;">◀ 前の手順</button>
+                    <button class="nav-btn" id="next-btn" onclick="nextStep()">次の手順 ▶</button>
                 </div>
             </div>
         </div>
 
-        <!-- 3. 買い出し用一覧 (スクロール対応) -->
         <div id="shopping-tab" class="tab-content scrollable-content"></div>
     </div>
 
-    <!-- データ編集モード -->
     <div class="app-container" id="edit-panel">
-        <h2>⚙️ データ編集 (基準: 15人分)</h2>
+        <h2>⚙️ データ編集 (基準: 60人分)</h2>
         <div style="flex: 1; overflow-y: auto;">
             <table>
                 <thead>
@@ -282,7 +287,7 @@
                 <tbody id="edit-tbody"></tbody>
             </table>
         </div>
-        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
             <button class="btn" onclick="addIngredient()">＋ 新しい材料を追加</button>
             <div class="edit-actions" style="margin: 0;">
                 <button class="btn" style="background-color: #7f8c8d;" onclick="cancelEdit()">キャンセル</button>
@@ -293,27 +298,85 @@
 
     <script>
         let ingredients = [
-            { group: 'A', category: '肉・野菜・乳製品', name: '豚肉', base: 400, unit: 'g' },
-            { group: 'A', category: 'スパイス・粉類', name: 'カレー粉', base: 1, unit: '大さじ' },
-            { group: 'A', category: 'スパイス・粉類', name: 'シナモン', base: 0.5, unit: '小さじ' },
-            { group: 'A', category: '調味料・ペースト・油', name: 'レモン汁', base: 1, unit: '小さじ' },
-            { group: 'B', category: '肉・野菜・乳製品', name: '玉ねぎ', base: 3, unit: '玉' },
-            { group: 'B', category: '調味料・ペースト・油', name: 'サラダ油', base: 3, unit: '大さじ' },
-            { group: 'B', category: '調味料・ペースト・油', name: 'にんにくチューブ', base: 1, unit: '大さじ' },
-            { group: 'B', category: '調味料・ペースト・油', name: 'しょうが', base: 1, unit: '小さじ' },
-            { group: 'B', category: '肉・野菜・乳製品', name: 'バター', base: 50, unit: 'g' },
-            { group: 'B', category: 'スパイス・粉類', name: 'カレー粉', base: 3, unit: '大さじ' },
-            { group: 'B', category: 'スパイス・粉類', name: '小麦粉', base: 3, unit: '大さじ' },
-            { group: 'C', category: '調味料・ペースト・油', name: 'とりガラスープの素', base: 10, unit: '小さじ' },
-            { group: 'C', category: '液体・缶詰類', name: '水', base: 5, unit: 'カップ' },
-            { group: 'C', category: '液体・缶詰類', name: 'カットトマト', base: 1, unit: '缶' },
-            { group: 'C', category: '液体・缶詰類', name: 'リンゴジュース', base: 200, unit: 'ml' },
-            { group: 'C', category: 'スパイス・粉類', name: 'ガラムマサラ', base: 1.5, unit: '大さじ' }, 
-            { group: 'C', category: '調味料・ペースト・油', name: 'ケチャップ', base: 3, unit: '大さじ' },
-            { group: 'C', category: '調味料・ペースト・油', name: 'ウスターソース', base: 3, unit: '大さじ' },
-            { group: 'C', category: '調味料・ペースト・油', name: 'マーマレード', base: 2, unit: '大さじ' },
-            { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.125, unit: '小さじ' },
-            { group: 'C', category: '液体・缶詰類', name: 'ニンジンジュース', base: 200, unit: 'ml' }
+            { group: 'A', category: '肉・野菜・乳製品', name: '豚肉', base: 1600, unit: 'g' },
+            { group: 'A', category: 'スパイス・粉類', name: 'カレー粉', base: 4, unit: '大さじ' },
+            { group: 'A', category: 'スパイス・粉類', name: 'シナモン', base: 2, unit: '小さじ' },
+            { group: 'A', category: '調味料・ペースト・油', name: 'レモン汁', base: 2, unit: '小さじ' },
+            { group: 'B', category: '肉・野菜・乳製品', name: '玉ねぎ', base: 12, unit: '玉' },
+            { group: 'B', category: '調味料・ペースト・油', name: 'サラダ油', base: 12, unit: '大さじ' },
+            { group: 'B', category: '調味料・ペースト・油', name: 'にんにくチューブ', base: 4, unit: '大さじ' },
+            { group: 'B', category: '調味料・ペースト・油', name: 'しょうが', base: 1, unit: '大さじ' },
+            { group: 'B', category: '肉・野菜・乳製品', name: 'バター', base: 200, unit: 'g' },
+            { group: 'B', category: 'スパイス・粉類', name: 'カレー粉', base: 12, unit: '大さじ' },
+            { group: 'B', category: 'スパイス・粉類', name: '小麦粉', base: 12, unit: '大さじ' },
+            { group: 'C', category: '調味料・ペースト・油', name: 'とりガラスープの素', base: 1, unit: '大さじ' },
+            { group: 'C', category: '液体・缶詰類', name: '水', base: 20, unit: 'カップ' },
+            { group: 'C', category: '液体・缶詰類', name: 'カットトマト缶', base: 4, unit: '缶' },
+            { group: 'C', category: '液体・缶詰類', name: 'リンゴジュース', base: 800, unit: 'ml' },
+            { group: 'C', category: 'スパイス・粉類', name: 'ガラムマサラ', base: 6, unit: '大さじ' }, 
+            { group: 'C', category: '調味料・ペースト・油', name: 'ケチャップ', base: 12, unit: '大さじ' },
+            { group: 'C', category: '調味料・ペースト・油', name: 'ウスターソース', base: 12, unit: '大さじ' },
+            { group: 'C', category: '調味料・ペースト・油', name: '塩', base: 0.5, unit: '小さじ' },
+            { group: 'C', category: '液体・缶詰類', name: 'ニンジンジュース', base: 800, unit: 'ml' }
+        ];
+
+        let cookingSteps = [
+            {
+                stepNum: '01',
+                group: 'A',
+                groupTitle: '【 グループ A 】 下ごしらえ',
+                action: '① 豚肉にカレー粉・シナモン・レモンを入れて30分置く',
+                target: '豚肉 ＋ スパイス類',
+                amountCalc: (ratio) => `豚肉 ${Math.round(1600*ratio)/1000}kg / カレー粉 ${Math.round(4*ratio*10)/10}大さじ`
+            },
+            {
+                stepNum: '02',
+                group: 'B',
+                groupTitle: '【 グループ B 】 玉ねぎ炒め',
+                action: '① フライパンに油を敷き、玉ねぎを30分炒める',
+                target: 'サラダ油 ＋ 玉ねぎ',
+                amountCalc: (ratio) => `サラダ油 ${Math.round(12*ratio*10)/10}大さじ / 玉ねぎ ${Math.round(12*ratio)}玉`
+            },
+            {
+                stepNum: '03',
+                group: 'B',
+                groupTitle: '【 グループ B 】 香味野菜・バター',
+                action: '② 炒めたタマネギに、にんにく・しょうが・バターを入れて炒める',
+                target: 'にんにく・しょうが・バター',
+                amountCalc: (ratio) => `バター ${Math.round(200*ratio)}g / にんにく ${Math.round(4*ratio*10)/10}大さじ`
+            },
+            {
+                stepNum: '04',
+                group: 'B',
+                groupTitle: '【 グループ B 】 ルー・肉合流',
+                action: '③ カレー粉・小麦粉を入れて、A（下味の豚肉）を入れて炒める',
+                target: 'カレー粉 ＋ 小麦粉 ＋ グループA全量',
+                amountCalc: (ratio) => `カレー粉/小麦粉 各 ${Math.round(12*ratio*10)/10}大さじ`
+            },
+            {
+                stepNum: '05',
+                group: 'C',
+                groupTitle: '【 グループ C 】 ① 鶏ガラスープ',
+                action: '【最優先】まず「とりガラスープの素」を溶かす',
+                target: 'とりガラスープの素',
+                amountCalc: (ratio) => `とりガラスープの素 ${Math.round(1*ratio*10)/10}大さじ`
+            },
+            {
+                stepNum: '06',
+                group: 'C',
+                groupTitle: '【 グループ C 】 ② すべて入れてあたためる',
+                action: '① 水・トマト・ジュース類、各種スパイスやソースを全て入れてあたためる',
+                target: '水・トマト缶・ジュース・ガラムマサラ・ケチャップ・ソース・塩',
+                amountCalc: (ratio) => `水 ${Math.round(20*ratio*10)/10}カップ / トマト缶 ${Math.round(4*ratio*10)/10}缶`
+            },
+            {
+                stepNum: '07',
+                group: 'C',
+                groupTitle: '【 グループ C 】 ③ Bの③を入れて煮込む',
+                action: '② Bの③（炒めたルー・肉）を入れてじっくり煮込む',
+                target: 'グループBで炒めた全材料の合流 ＆ 煮込み',
+                amountCalc: (ratio) => `煮込み工程（全体をよく混ぜて仕上げる）`
+            }
         ];
 
         let tempIngredients = [];
@@ -357,25 +420,25 @@
         }
 
         function updateNavStep() {
-            if (ingredients.length === 0) return;
+            if (cookingSteps.length === 0) return;
             if (currentStep < 0) currentStep = 0;
-            if (currentStep >= ingredients.length) currentStep = ingredients.length - 1;
+            if (currentStep >= cookingSteps.length) currentStep = cookingSteps.length - 1;
 
-            const ratio = (parseInt(servingsInput.value) || 1) / 15.0;
-            const item = ingredients[currentStep];
-            const calculatedAmount = convertToToolUnit(item.base * ratio, item.unit);
+            const ratio = (parseInt(servingsInput.value) || 1) / 60.0;
+            const step = cookingSteps[currentStep];
 
-            document.getElementById('step-counter').innerText = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(ingredients.length).padStart(2, '0')}`;
-            document.getElementById('step-group-name').innerText = `【 グループ ${item.group} 】 ${item.category}`;
-            document.getElementById('step-name').innerText = item.name;
-            document.getElementById('step-amount').innerText = calculatedAmount;
+            document.getElementById('step-counter').innerText = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(cookingSteps.length).padStart(2, '0')}`;
+            document.getElementById('step-group-name').innerText = step.groupTitle;
+            document.getElementById('step-action').innerText = step.action;
+            document.getElementById('step-name').innerText = step.target;
+            document.getElementById('step-amount').innerText = step.amountCalc(ratio);
 
             document.getElementById('prev-btn').disabled = (currentStep === 0);
-            document.getElementById('next-btn').innerText = (currentStep === ingredients.length - 1) ? '完了 🎉' : '次の項目 ▶';
+            document.getElementById('next-btn').innerText = (currentStep === cookingSteps.length - 1) ? '調理完了 🎉' : '次の手順 ▶';
         }
 
         function nextStep() {
-            if (currentStep < ingredients.length - 1) {
+            if (currentStep < cookingSteps.length - 1) {
                 currentStep++;
                 updateNavStep();
             } else {
@@ -391,9 +454,8 @@
         }
 
         function renderRecipe() {
-            const ratio = (parseInt(servingsInput.value) || 1) / 15.0;
+            const ratio = (parseInt(servingsInput.value) || 1) / 60.0;
 
-            // 1. 調理用一覧
             let recipeHtml = '';
             ['A', 'B', 'C'].forEach(groupName => {
                 const items = ingredients.filter(i => i.group === groupName);
@@ -407,7 +469,6 @@
             });
             document.getElementById('recipe-tab').innerHTML = recipeHtml;
 
-            // 2. 買い出し用一覧
             let totals = {};
             ingredients.forEach(i => {
                 const key = `${i.name}_${i.unit}`;
